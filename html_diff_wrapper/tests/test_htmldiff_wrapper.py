@@ -437,18 +437,18 @@ class TestHtmlDiffWrapperIntegration(FunctionalTests):
                          "un budget de 5000€.")
 
     def test_merge_delete_sentences(self):
-        text_origin="Programme d'octobre prochain. Organiser des animations lors de la Fete de la science."
-        text1="Organiser des animations lors de la Fete de la science."
-        text2="Organiser des animations lors de la Fete de la Science."
+        text_origin = "Programme d'octobre prochain. Organiser des animations lors de la Fete de la science."
+        text1 = "Programme d'octobre prochain. Organiser lors de la Fete de la science."
+        text2 = "Programme d'octobre. Organiser des animations lors de la Fete de la science."
         result = html_diff_wrapper.merge(text_origin, [text1, text2])
-        self.assertEqual(result, "Organiser des animations lors de la Fete de la Science.")
+        self.assertEqual(result, "Programme d'octobre. Organiser lors de la Fete de la science.")
 
     def test_merge_modify_words(self):
         text_origin = "Organiser des animations lors de la Fete de la science."
-        text1 = "Programmer une animation lors de la Fete de la science en octobre prochain."
-        text2 = "Organiser une animation lors de la Fete de la Science."
+        text1 = "Programmer des animations lors de la Fete de la science en octobre prochain."
+        text2 = "Organiser une animation lors de la Fete de la science."
         result = html_diff_wrapper.merge(text_origin, [text1, text2])
-        self.assertEqual(result, "Programmer une animation lors de la Fete de la Science en octobre prochain.")
+        self.assertEqual(result, "Programmer une animation lors de la Fete de la science en octobre prochain.")
 
 # - - - - - - - - - - accept and refuse modifications within a single sentence
 
@@ -506,3 +506,32 @@ class TestHtmlDiffWrapperIntegration(FunctionalTests):
                                                           {'id': 'ins'})
 
         self.assertEqual(merged_diff, '<p><span style="font-family: arial black,avant garde;">Organiser</span> des <strong>animation</strong> lors <span id="del">de la</span><span id="ins"></span> Fete <em><span id="del">de</span><span id="ins"></span> la</em> <span id="del">science.</span><span id="ins"></span></p>')
+
+    def test_has_conflict(self):
+        text_origin = "Organiser des animation lors de la Fete de la science."
+        text1 = "Organiser des animation autre modification Fete de la science."
+        text2 = "Organiser des animations une modificatio Fete de la science et de l'innovation."
+        has_conflict = html_diff_wrapper.has_conflict(text_origin, 
+                                                     [text1, text2])
+        self.assertTrue(has_conflict)
+
+        text_origin = "Organiser des animation lors de la Fete de la science."
+        text1 = "Une modif des animation lors de la Fete de la science."
+        text2 = "Organiser des animations une modificatio Fete de la science et de l'innovation."
+        has_conflict = html_diff_wrapper.has_conflict(text_origin, 
+                                                     [text1, text2])
+        self.assertFalse(has_conflict)
+
+        text_origin = "Organiser des animation lors de la Fete de la science."
+        text1 = "Organiser des animation lors de la Fete de la science.\n"
+        text2 = "Organiser des animation lors de la Fete de la science. Modification"
+        has_conflict = html_diff_wrapper.has_conflict(text_origin, 
+                                                     [text1, text2])
+        self.assertTrue(has_conflict)
+
+        text_origin = "Organiser des animation lors de la Fete de la science."
+        text1 = "Modif des animation lors de la Fete de la science."
+        text2 = "Organiser des animation lors de la Fete de la science. Modification"
+        has_conflict = html_diff_wrapper.has_conflict(text_origin, 
+                                                     [text1, text2])
+        self.assertFalse(has_conflict)
