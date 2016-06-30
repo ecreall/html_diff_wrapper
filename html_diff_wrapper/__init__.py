@@ -62,14 +62,19 @@ INS_TAG_ENDS = {
 SPACE_TAG = '[#]'
 
 
-def tag_to_text(tag):
-    li_tags = tag.find_all(['li'])
-    for li_tag in li_tags:
-        if not li_tag.text and not li_tag.contents:
-            li_tag.extract()
+def remove_empty_tags(tag, tag_id):
+    tags = tag.find_all([tag_id])
+    for item in tags:
+        if (not item.text or not item.text.replace('\n', ''))\
+           and not item.contents:
+            item.extract()
 
+
+def tag_to_text(tag):
+    remove_empty_tags(tag, 'li')
+    remove_empty_tags(tag, 'p')
     return ''.join([str(t) for t in tag.contents]).replace(
-        ' '+SPACE_TAG+' ', ' ')
+        ' ' + SPACE_TAG + ' ', ' ')
 
 
 def prepare_text_spaces(text):
@@ -106,7 +111,7 @@ def normalize_text(text, normalizers={}):
     for normalizer in normalizers:
         soup = normalizer(soup)
 
-    return tag_to_text(soup.body)
+    return tag_to_text(soup.body).strip()
 
 
 def index(list_values, index, default=None):
@@ -472,8 +477,8 @@ def has_conflict(origin_text, texts):
     result = origin_text
     has_conflict = False
     for alternative in texts:
-        patch = dmp.patch_make(origin_text, alternative)
-        result, results = dmp.patch_apply(patch, result)
+        patch = dmp.patch_make(origin_text, result)
+        result, results = dmp.patch_apply(patch, alternative)
         if False in results:
             has_conflict = True
             break
@@ -486,12 +491,11 @@ def merge(origin_text, texts):
     dmp = diff_match_patch()
     dmp.Match_Threshold = 0.1
     text_result = origin_text
-    # conflict = False
     for alternative in texts:
-        patch = dmp.patch_make(origin_text, alternative)
-        text_result, results = dmp.patch_apply(patch, text_result)
+        patch = dmp.patch_make(origin_text, text_result)
+        text_result, results = dmp.patch_apply(patch, alternative)
         if False in results:
-            # conflict = True
+            return origin_text
             break
 
     return text_result
@@ -693,6 +697,7 @@ def get_merged_diffs(text,
 
     merged_diff = soup_to_text(soup)
     return merged_diff
+
 
 def includeme(config): # pragma: no cover
     config.scan('.')
