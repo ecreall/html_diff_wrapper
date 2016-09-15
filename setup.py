@@ -17,7 +17,7 @@ requires = [
 
 setup(
     name='html_diff_wrapper',
-    version='0.1',
+    version='1.0',
     description='A html diff wrapper',
     long_description=README + '\n\n' + CHANGES,
     classifiers=[
