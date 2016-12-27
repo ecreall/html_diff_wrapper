@@ -62,28 +62,50 @@ INS_TAG_ENDS = {
 SPACE_TAG = '[#]'
 
 
+def _replace_special_char(text):
+    return text.replace('\xa0', ' ').\
+        replace('&nbsp;', ' ').\
+        replace('\n', '').\
+        replace('\r', '')
+
+
+def remove_empty_strings(tag):
+    strings = tag.strings
+    for item in list(strings):
+        if (not item or not _replace_special_char(item).
+                replace(' ', '')):
+            try:
+                item.extract()
+            except:
+                pass
+
+
 def remove_empty_tags(tag, tag_id):
     tags = tag.find_all([tag_id])
     for item in tags:
-        if (not item.text or not item.text.replace('\n', ''))\
-           and not item.contents:
+        strings = item.strings
+        contents = [c for c in item.contents if c not in strings]
+        if (not item.text or not _replace_special_char(item.text).
+            replace(' ', ''))\
+           and not contents:
             item.extract()
 
 
 def tag_to_text(tag):
-    remove_empty_tags(tag, 'li')
-    remove_empty_tags(tag, 'p')
-    return ''.join([str(t) for t in tag.contents]).replace(
-        ' ' + SPACE_TAG + ' ', ' ')
+    return ''.join([str(t) for t in tag.contents]).\
+        replace(' '+SPACE_TAG+' ', ' ')
 
 
 def prepare_text_spaces(text):
-    return text.replace('\xa0', ' ').replace(' ', ' '+SPACE_TAG+' ')
+    return _replace_special_char(text).\
+        replace(' ', ' '+SPACE_TAG+' ')
 
 
 def prepare_soup_spaces(soup):
     for string_tag in list(soup.strings):
-        string_tag.replace_with(string_tag.replace(' ', ' '+SPACE_TAG+' '))
+        string_tag.replace_with(
+            _replace_special_char(string_tag).
+            replace(' ', ' '+SPACE_TAG+' '))
 
     return soup
 
@@ -101,16 +123,20 @@ def format_spaces(content):
         if new_tag == '':
             new_tag.extract()
 
-    return soup, tag_to_text(soup.body).replace(' '+SPACE_TAG+' ', ' ')
+    return soup, tag_to_text(soup.body)
 
 
 def normalize_text(text, normalizers={}):
+    text = _replace_special_char(text)
     parser = HTMLParser()
     text = parser.unescape(text)
     soup = BeautifulSoup(text, "lxml")
     for normalizer in normalizers:
         soup = normalizer(soup)
 
+    remove_empty_tags(soup.body, 'li')
+    remove_empty_tags(soup.body, 'p')
+    remove_empty_strings(soup.body)
     return tag_to_text(soup.body).strip()
 
 
@@ -697,6 +723,26 @@ def get_merged_diffs(text,
 
     merged_diff = soup_to_text(soup)
     return merged_diff
+
+
+def merge_html(text1, text2):
+    soup_wrapped, textdiff = render_html_diff(text1, text2, 'modif')
+    correction_tags = soup_wrapped.find_all('span', {'id': "modif"})
+    descriminator = 0
+    for correction_tag in correction_tags:
+        correction_tag['data-item'] = str(descriminator)
+        descriminator += 1
+
+    corrections = []
+    for index, tag in enumerate(correction_tags):
+        corrections.extend(soup_wrapped.find_all(
+            'span', {'id': 'modif', 'data-item': index}))
+
+    soup = include_diffs(
+        soup_wrapped, corrections[0:2],
+        "del", "ins", None)
+
+    return soup_to_text(soup)
 
 
 def includeme(config): # pragma: no cover

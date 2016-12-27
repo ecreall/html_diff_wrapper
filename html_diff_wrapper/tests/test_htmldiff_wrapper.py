@@ -535,3 +535,16 @@ class TestHtmlDiffWrapperIntegration(FunctionalTests):
         has_conflict = html_diff_wrapper.has_conflict(text_origin, 
                                                      [text1, text2])
         self.assertFalse(has_conflict)
+
+    def test_normalize_text(self):
+        text_origin = """<div class="myclass">\r\n<h1>My title</h1>\r\n  <h1>My title 2</h1>\r\n<p><span style="font-family: arial black,avant garde;">Organiser</span> des <strong>animation</strong> lors de la Fete <em>de la</em> science.</p>\r\n<h1>My title 3</h1>\r\n<p><span style="font-family: arial black,avant garde;">Publier</span> les <strong>idées</strong> lors de la Fete.</p>\r\n</div>"""
+        normalized_text_origin = html_diff_wrapper.normalize_text(text_origin)
+        self.assertEqual(normalized_text_origin, """<div class="myclass"><h1>My title</h1><h1>My title 2</h1><p><span style="font-family: arial black,avant garde;">Organiser</span> des <strong>animation</strong> lors de la Fete <em>de la</em> science.</p><h1>My title 3</h1><p><span style="font-family: arial black,avant garde;">Publier</span> les <strong>idées</strong> lors de la Fete.</p></div>""")
+
+        text1 = """<div class="myclass">\r\n<h1>My title</h1>\r\n <h1>My title 2 autre</h1><p></p>\r\n<p><span style="font-family: arial black,avant garde;">Organiser</span> des <strong>animation</strong> lors de la Fete <em>de la</em> science.</p>\r\n<h1>My title 3</h1>\r\n<p><span style="font-family: arial black,avant garde;">Publier</span> les <strong>propositions</strong> lors de la Fete.</p>\r\n</div>"""
+        normalized_text1 = html_diff_wrapper.normalize_text(text1)
+        self.assertEqual(normalized_text1, """<div class="myclass"><h1>My title</h1><h1>My title 2 autre</h1><p><span style="font-family: arial black,avant garde;">Organiser</span> des <strong>animation</strong> lors de la Fete <em>de la</em> science.</p><h1>My title 3</h1><p><span style="font-family: arial black,avant garde;">Publier</span> les <strong>propositions</strong> lors de la Fete.</p></div>""")
+
+        text2 = """<div class="myclass">\r\n<h1>My title</h1><p>    </p>\r\n<p>Mon texte ici</p>\r\n<h1>My title 2</h1>\r\n<p><span style="font-family: arial black,avant garde;">Organiser</span> des <strong>animation</strong> lors de la Fete <em>de la</em> science.</p>\r\n<h1>My title 3</h1>\r\n<p><span style="font-family: arial black,avant garde;">Publier</span> les <strong>idées</strong> lors de la Fete.</p>\r\n</div>"""
+        normalized_text2 = html_diff_wrapper.normalize_text(text2)
+        self.assertEqual(normalized_text2, """<div class="myclass"><h1>My title</h1><p>Mon texte ici</p><h1>My title 2</h1><p><span style="font-family: arial black,avant garde;">Organiser</span> des <strong>animation</strong> lors de la Fete <em>de la</em> science.</p><h1>My title 3</h1><p><span style="font-family: arial black,avant garde;">Publier</span> les <strong>idées</strong> lors de la Fete.</p></div>""")
